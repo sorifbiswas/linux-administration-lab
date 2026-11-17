@@ -1,0 +1,131 @@
+# Linux Permissions
+
+## Overview
+
+Linux is a multi-user system, so every file and directory has an **owner**, a **group**, and a set of **permissions** that control who can read, write or execute it.
+
+## Reading `ls -l` Output
+
+```bash
+ls -l script.sh
+```
+
+```
+-rwxr-xr-- 1 alice devs 1024 Nov 17 10:30 script.sh
+│└┬┘└┬┘└┬┘ │ └──┬─┘ └─┬┘ └─┬┘ └────┬─────┘ └───┬───┘
+│ │  │  │  │    │     │    │       │           └─ File name
+│ │  │  │  │    │     │    │       └─ Last modified
+│ │  │  │  │    │     │    └─ Size in bytes
+│ │  │  │  │    │     └─ Group owner
+│ │  │  │  │    └─ User owner
+│ │  │  │  └─ Number of hard links
+│ │  │  └─ Permissions for others
+│ │  └─ Permissions for group
+│ └─ Permissions for user (owner)
+└─ File type (- file, d directory, l link)
+```
+
+## The Three Permissions
+
+| Symbol | Name | Numeric | On a file | On a directory |
+|---|---|---|---|---|
+| `r` | Read | 4 | View contents | List contents (`ls`) |
+| `w` | Write | 2 | Modify contents | Create, delete, rename files inside |
+| `x` | Execute | 1 | Run as a program | Enter the directory (`cd`) |
+
+## The Three Classes
+
+| Class | Symbol | Who it applies to |
+|---|---|---|
+| User (owner) | `u` | The file's owner |
+| Group | `g` | Members of the file's group |
+| Others | `o` | Everyone else |
+| All | `a` | User, group and others together |
+
+## Numeric (Octal) Mode
+
+Add the values for each class: `r=4`, `w=2`, `x=1`.
+
+| Octal | Symbolic | Meaning |
+|---|---|---|
+| 7 | `rwx` | Read, write, execute |
+| 6 | `rw-` | Read, write |
+| 5 | `r-x` | Read, execute |
+| 4 | `r--` | Read only |
+| 0 | `---` | No access |
+
+### Common Permission Sets
+
+| Mode | Symbolic | Typical use |
+|---|---|---|
+| `755` | `rwxr-xr-x` | Scripts, programs, public directories |
+| `644` | `rw-r--r--` | Regular files, config files |
+| `700` | `rwx------` | Private directories (e.g. `~/.ssh`) |
+| `600` | `rw-------` | Private files (e.g. SSH private keys) |
+| `777` | `rwxrwxrwx` | Everyone can do everything (avoid) |
+
+## Special Permissions
+
+| Bit | Numeric | Effect | Example |
+|---|---|---|---|
+| **setuid** | 4000 | File runs with the owner's privileges | `/usr/bin/passwd` |
+| **setgid** | 2000 | File runs with the group's privileges. On a directory, new files inherit the group | Shared project folders |
+| **sticky** | 1000 | Only the file's owner can delete it within the directory | `/tmp` |
+
+```bash
+ls -l /usr/bin/passwd   # -rwsr-xr-x  (s = setuid)
+ls -ld /tmp             # drwxrwxrwt  (t = sticky bit)
+```
+
+## Default Permissions (umask)
+
+The `umask` removes permissions from newly created files and directories.
+
+| umask | New files | New directories |
+|---|---|---|
+| `022` | `644` | `755` |
+| `002` | `664` | `775` |
+| `077` | `600` | `700` |
+
+Files start at `666` and directories at `777`, then the umask is subtracted.
+
+```bash
+umask           # Show current umask
+umask 027       # Set a new umask for this session
+```
+
+## Commands
+
+```bash
+# View permissions and ownership
+ls -l
+ls -ld /etc                 # The directory itself, not its contents
+stat file.txt               # Detailed info including octal mode
+id                          # Your user and groups
+
+# Test permissions
+touch test.txt
+chmod 000 test.txt
+cat test.txt                # Permission denied
+chmod 644 test.txt
+cat test.txt                # Works
+
+# Access Control Lists (finer-grained control)
+getfacl file.txt
+setfacl -m u:bob:rw file.txt
+setfacl -x u:bob file.txt   # Remove the entry
+```
+
+## Practice
+
+1. Create a file and note its default permissions. Compare with your `umask`.
+2. Remove read permission from yourself and try to `cat` the file.
+3. Make a directory without `x` permission and try to `cd` into it.
+4. Find three files on the system with the setuid bit: `find /usr/bin -perm -4000`.
+5. Explain why `/tmp` shows `drwxrwxrwt`.
+
+## Notes
+
+- Add your own output and observations here.
+- Screenshot: `../screenshots/linux-permissions.png`
+- Related: [chmod](chmod.md), [chown](chown.md)
